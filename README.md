@@ -8,7 +8,7 @@ require ('MySQL/DatabaseHandler.php');
 
 $dbhandler = new DatabaseHandler();
 
-// prepare the statement
+// prepare the statement (can be a SELECT/INSERT/UPDATE/DELETE)
 $sql = $dbhandler->prepareStatement ('SELECT * FROM table WHERE id = ? AND email = ?');
 if (App\Custom\Error::IsAnError ($sql))
 {
