@@ -19,7 +19,7 @@ if (App\Custom\Error::IsAnError ($sql))
 
 // execute the statement
 // 1st parameter is an array of values
-// 2nd parameter is the binding string corresponding to the values in that order
+// 2nd parameter is the binding string corresponding to the values in that order (i = integer, s = string, d = float, b = blob)
 $sql = $dbhandler->executeStatement ([$id, $email], 'is');
 if (App\Custom\Error::IsAnError ($sql))
 {
@@ -27,6 +27,10 @@ if (App\Custom\Error::IsAnError ($sql))
     // $sql->GetError() // get error message
     // $sql->GetErrorCode() // get error code
 }
+
+// if the query does not require passing values or the WHERE clause (e.g. SELECT * FROM table), pass empty values to executeStatement
+$sql = $dbhandler->executeStatement ([], '');
+
 
 // fetch the results as a single row
 $sql = $dbhandler->fetchRow();
