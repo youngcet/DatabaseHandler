@@ -41,3 +41,5 @@ $sql = $dbhandler->fetchAll();
 // close the connection
 $dbhandler->closeConnection();
 ```
+
+Full documentation on the wiki: https://github.com/youngcet/DatabaseHandler/wiki
