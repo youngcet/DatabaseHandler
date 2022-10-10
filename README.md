@@ -3,8 +3,9 @@
 This package prepares and executes MySQL Statements
 
 # Usage
+
 ```
-require ('MySQL/DatabaseHandler.php');
+require ('autoloader.php');
 
 $dbhandler = new DatabaseHandler();
 
@@ -20,7 +21,7 @@ if (App\Custom\Error::IsAnError ($sql))
 // execute the statement
 // 1st parameter is an array of values
 // 2nd parameter is the binding string corresponding to the values in that order (i = integer, s = string, d = float, b = blob)
-$sql = $dbhandler->executeStatement ([$id, $email], 'is');
+$sql = $dbhandler->executeStatement ([6, 'young.cet@gmail.com'], 'is');
 if (App\Custom\Error::IsAnError ($sql))
 {
     // handle error
@@ -37,6 +38,55 @@ $sql = $dbhandler->fetchRow();
 
 // fetch all rows
 $sql = $dbhandler->fetchAll();
+
+
+####################################################################################################################
+
+// LOADING MULTIPLE SQL QUERIES
+$queries = 
+    [
+        'SELECT_ALL_USERS' => 'SELECT * FROM table', 
+        'SELECT_USER' => 'SELECT * FROM table WHERE id = ?',
+        'INSERT_USER' => 'INSERT INTO table (fname, lname, email) VALUES (?,?,?)'
+    ];
+
+$sql = $dbhandler->loadQueries ($queries);
+if (App\Custom\Error::IsAnError ($sql))
+{
+    // handle error
+    // $sql->GetError() // get error message
+    // $sql->GetErrorCode() // get error code
+}
+
+$sql = $dbhandler->executeLoadedQuery ('SELECT_ALL_USERS', [], ''); // argument 2 & 3 are empty since this statement does not have a where clause
+if (App\Custom\Error::IsAnError ($sql))
+{
+    // handle error
+    // $sql->GetError() // get error message
+    // $sql->GetErrorCode() // get error code
+}
+
+// // fetch the results
+print_r($dbhandler->fetchAll());
+
+$sql = $dbhandler->executeLoadedQuery ('SELECT_USER', [6], 'i');
+if (App\Custom\Error::IsAnError ($sql))
+{
+    // handle error
+    // $sql->GetError() // get error message
+    // $sql->GetErrorCode() // get error code
+}
+
+// fetch the results
+print_r($dbhandler->fetchRow());
+
+$sql = $dbhandler->executeLoadedQuery ('INSERT_USER', ['yung', 'cet', 'young.cet@gmail.com'], 'sss');
+if (App\Custom\Error::IsAnError ($sql))
+{
+    // handle error
+    // $sql->GetError() // get error message
+    // $sql->GetErrorCode() // get error code
+}
 
 // close the connection
 $dbhandler->closeConnection();
