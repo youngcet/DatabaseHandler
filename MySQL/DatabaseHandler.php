@@ -13,7 +13,7 @@
 	 * @author     Cedric Maenetja <cedricm@permanentlink.co.za>
 	 * @copyright  2022 Permanent Link CO
 	 * @license    Permanent Link CO
-	 * @version    Release: 1.0
+	 * @version    Release: 1.0.1
 	 */
 
 	class DatabaseHandler extends Database
@@ -28,6 +28,8 @@
 			$this->_dbconn = $this->connect();
 			$this->_stmt = (object) array();
 			$this->_error = $this->_results = array();
+			$this->_queries = array();
+			$this->_isdbconnclosed = false;
 		}
 
 
@@ -39,11 +41,35 @@
 		 * @return database object
 		 */ 
 
-		public function isConnected ()
+		public function isConnected()
 		{
-			return $this->_dbconn;
+			// check if connection was closed
+			if ($this->_isdbconnclosed) $this->_dbconn = new App\Custom\Error (-1, "The Database connection is already closed!");
+
+			return (App\Custom\Error::IsAnError ($this->_dbconn)) ? $this->_dbconn : true;
 		}
         
+
+
+		/**
+		 * Load sql queries from an array
+		 * 
+		 * @author Cedric Maenetja <cedricm@permanentlink.co.za>
+		 * @return 1 or App\Custom\Error
+		 */
+
+		public function loadQueries ($queries)
+		{
+			if (! is_array ($queries)) $queries = new App\Custom\Error (-1, "[$queries] not an Array!");
+
+			if (! App\Custom\Error::IsAnError ($queries))
+			{
+				foreach ($queries as $key => $value) $this->_queries[$key] = $value;
+			}
+
+			return (App\Custom\Error::IsAnError ($queries)) ? $queries : 1;
+		}
+
 
 
 		/**
@@ -57,9 +83,14 @@
 
 		public function prepareStatement ($sqlStatement)
 		{
-			if (! $this->isConnected() || ! $this->_stmt = $this->_dbconn->prepare ($sqlStatement))
+			if (App\Custom\Error::IsAnError ($this->isConnected()))
 			{
-				return new App\Custom\Error (-1, $this->_dbconn->connect_error);
+				return $this->_dbconn;
+			}
+
+			if (! $this->_stmt = $this->_dbconn->prepare ($sqlStatement))
+			{
+				return new App\Custom\Error (-1, $this->_dbconn->error);
 			}
 
 			return 1;
@@ -79,11 +110,26 @@
 
 		public function executeStatement ($values, $valueType)
 		{
-		    if (! empty($values) && ! empty ($valueType)) $this->_stmt->bind_param ($valueType, ...$values);
-		
-			if (! $this->isConnected() || ! $this->_stmt->execute())
+			if (App\Custom\Error::IsAnError ($this->isConnected()))
 			{
-				return new App\Custom\Error (-1, $this->_dbconn->connect_error);
+				return $this->_dbconn;
+			}
+
+		    if (! empty ($values) && ! empty ($valueType)) 
+			{
+				try
+				{
+					$this->_stmt->bind_param ($valueType, ...$values);
+				}
+				catch (ArgumentCountError $e)
+				{
+					return new App\Custom\Error (-1, $e->GetMessage());
+				}
+			}
+		
+			if (! $this->_stmt->execute())
+			{
+				return new App\Custom\Error (-1, $this->_stmt->error);
 			}
 
 			$this->_results = $this->_stmt->get_result();
@@ -91,6 +137,29 @@
 
 			return 1;
 
+		}
+
+
+
+		/**
+		 * execute a single sql queries from an array
+		 * 
+		 * @author Cedric Maenetja <cedricm@permanentlink.co.za>
+		 * @return true or App\Custom\Error
+		 */
+
+		public function executeLoadedQuery ($key, $values, $bindingstring)
+		{
+			$results = true;
+			if (! array_key_exists ($key, $this->_queries)) $results = new App\Custom\Error (-1, "SQL Query [$key] does not exist!");
+			
+			if (! App\Custom\Error::IsAnError ($results))
+			{
+				$sql = $this->prepareStatement ($this->_queries[$key]);
+				$results = (App\Custom\Error::IsAnError ($sql)) ? $sql : $this->executeStatement ($values, $bindingstring);
+			}
+
+			return $results;
 		}
 
 
@@ -144,8 +213,9 @@
 
 		public function closeConnection()
 		{
-			if ($this->isConnected ())
+			if (! App\Custom\Error::IsAnError ($this->isConnected()))
 			{
+				$this->_isdbconnclosed = true;
 				$this->_dbconn->close();
 			}
 		}

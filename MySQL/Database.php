@@ -10,7 +10,7 @@
 	 * @author     Cedric Maenetja <cedricm@permanentlink.co.za>
 	 * @copyright  2022 Permanent Link CO
 	 * @license    Permanent Link CO
-	 * @version    Release: 1.0
+	 * @version    Release: 1.0.1
 	 */
 
 	class Database
@@ -27,11 +27,13 @@
             $this->password = "";				# password
             $this->dbname = "giftcards";		# database name
 
-			$conn = new mysqli ($this->servername, $this->username, $this->password, $this->dbname);
+			mysqli_report (MYSQLI_REPORT_OFF);
+			/* @ is used to suppress warnings */
+			$conn = @new mysqli ($this->servername, $this->username, $this->password, $this->dbname);
 
-			if ($conn->connect_errno)
+			if ($conn->connect_error)
 			{
-				return 0;
+				return new App\Custom\Error (-1, 'Connection error: '.$conn->connect_error);
 			}
 
 			return $conn;
